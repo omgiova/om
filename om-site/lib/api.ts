@@ -13,7 +13,6 @@ export async function getSheet(sheet: string) {
 async function post(body: object) {
   const res = await fetch(BASE, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   const json = await res.json();
