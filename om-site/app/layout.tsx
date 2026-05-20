@@ -12,8 +12,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <body>
         <Sidebar />
-        <main className="ml-56 min-h-screen">
-          {children}
+        <main className="ml-56 min-h-screen flex justify-center items-start w-[calc(100%-14rem)] px-6">
+          <div className="w-full max-w-5xl">
+            {children}
+          </div>
         </main>
       </body>
     </html>

@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import { usePosts } from "@/hooks/useSheet";
+import { addRow, updateRow, deleteRow, toggleFavorite } from "@/lib/api";
 import { ExportButton } from "@/components/ExportButton";
+import { CrudActions } from "@/components/CrudActions";
 import { Post } from "@/lib/types";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import clsx from "clsx";
@@ -16,11 +18,10 @@ const COR_CAT: Record<string, string> = {
   "Branding":   "chip-orange",
 };
 
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, onEdit, onDelete, onFavorite }: { post: Post; onEdit: () => void; onDelete: () => void; onFavorite: () => void; }) {
   const [open, setOpen] = useState(false);
   const linhas = post.copy_completa?.split("\n") ?? [];
   const conceito = linhas[0] ?? "";
-  const corpo = linhas.slice(1).join("\n").trim();
 
   return (
     <div className="card overflow-hidden">
@@ -45,7 +46,15 @@ function PostCard({ post }: { post: Post }) {
           {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </div>
       </button>
-
+      <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between gap-3">
+        <div className="text-xs text-white/40">#{post.id}</div>
+        <CrudActions
+          favorited={post.favorito === "true"}
+          onFavorite={onFavorite}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      </div>
       {open && (
         <div className="px-4 pb-4 ml-10 border-t border-white/5 pt-4">
           <pre className="copy-text">{post.copy_completa}</pre>
@@ -56,12 +65,68 @@ function PostCard({ post }: { post: Post }) {
 }
 
 export default function PostsPage() {
-  const { data, isLoading } = usePosts();
+  const { data, isLoading, mutate } = usePosts();
   const [cat,    setCat]    = useState("Todas");
   const [fmt,    setFmt]    = useState("Todos");
   const [busca,  setBusca]  = useState("");
 
   const posts: Post[] = data ?? [];
+
+  async function handleAddPost() {
+    if (!confirm("Confirmar novo post?")) return;
+
+    const categoria = prompt("Categoria:", "Educação")?.trim() ?? "";
+    const subcategoria = prompt("Subcategoria:", "")?.trim() ?? "";
+    const formato = prompt("Formato:", "")?.trim() ?? "";
+    const copyCompleta = prompt(
+      "Copy completa (use Enter para nova linha):",
+      ""
+    )?.trim() ?? "";
+
+    if (!categoria || !subcategoria || !formato || !copyCompleta) {
+      alert("Todos os campos são necessários para criar o post.");
+      return;
+    }
+
+    if (!confirm("Confirmar inserção deste post?")) return;
+    await addRow("posts", {
+      categoria,
+      subcategoria,
+      formato,
+      copy_completa: copyCompleta,
+    });
+    mutate();
+  }
+
+  async function handleEditPost(post: Post) {
+    const categoria = prompt("Categoria:", post.categoria)?.trim() ?? "";
+    const subcategoria = prompt("Subcategoria:", post.subcategoria)?.trim() ?? "";
+    const formato = prompt("Formato:", post.formato)?.trim() ?? "";
+    const copyCompleta = prompt(
+      "Copy completa (use Enter para nova linha):",
+      post.copy_completa ?? ""
+    )?.trim() ?? "";
+
+    if (!confirm("Confirmar alteração deste post?")) return;
+    await updateRow("posts", post.id, {
+      categoria,
+      subcategoria,
+      formato,
+      copy_completa: copyCompleta,
+    });
+    mutate();
+  }
+
+  async function handleDeletePost(post: Post) {
+    if (!confirm(`Excluir post ${post.id}?`)) return;
+    await deleteRow("posts", post.id);
+    mutate();
+  }
+
+  async function handleToggleFavorite(post: Post) {
+    await toggleFavorite("posts", post.id, post.favorito === "true");
+    mutate();
+  }
 
   const filtrados = posts.filter(p => {
     const okCat = cat === "Todas" || p.categoria === cat;
@@ -73,13 +138,21 @@ export default function PostsPage() {
   return (
     <div className="p-8 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
           <p className="text-[10px] tracking-widest uppercase text-[#F97316] mb-1">5</p>
           <h1 className="font-display text-3xl text-white">Sugestões de Posts</h1>
           <p className="text-white/30 text-sm mt-1">{filtrados.length} posts</p>
         </div>
-        <ExportButton sheet="posts" label="Exportar posts" />
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onClick={handleAddPost}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple/20 text-white border border-purple/40 hover:bg-purple/30 transition"
+          >
+            Novo post
+          </button>
+          <ExportButton sheet="posts" label="Exportar posts" />
+        </div>
       </div>
 
       {/* Filtros */}
@@ -125,7 +198,15 @@ export default function PostsPage() {
         <p className="text-white/30 text-sm">Carregando...</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {filtrados.map(p => <PostCard key={p.id} post={p} />)}
+          {filtrados.map(p => (
+            <PostCard
+              key={p.id}
+              post={p}
+              onEdit={() => handleEditPost(p)}
+              onDelete={() => handleDeletePost(p)}
+              onFavorite={() => handleToggleFavorite(p)}
+            />
+          ))}
           {filtrados.length === 0 && (
             <p className="text-white/20 text-sm text-center py-12">Nenhum post encontrado.</p>
           )}

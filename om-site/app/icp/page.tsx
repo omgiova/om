@@ -1,20 +1,62 @@
 "use client";
 import { useState } from "react";
 import { useICP } from "@/hooks/useSheet";
+import { addRow, updateRow, deleteRow, toggleFavorite } from "@/lib/api";
 import { ExportButton } from "@/components/ExportButton";
+import { CrudActions } from "@/components/CrudActions";
 import { ICP } from "@/lib/types";
 import clsx from "clsx";
 
 export default function ICPPage() {
-  const { data, isLoading } = useICP();
+  const { data, isLoading, mutate } = useICP();
   const [filtro, setFiltro] = useState<"Todos" | "Prioritário" | "Secundário">("Todos");
 
   const icps: ICP[] = data ?? [];
   const filtrados = filtro === "Todos" ? icps : icps.filter(i => i.tipo === filtro);
 
+  async function handleAddICP() {
+    if (!confirm("Confirmar novo ICP?")) return;
+
+    const tipo = prompt("Tipo (Prioritário / Secundário):", "Prioritário")?.trim() ?? "";
+    const perfil = prompt("Perfil:", "")?.trim() ?? "";
+    const dor_principal = prompt("Dor principal:", "")?.trim() ?? "";
+    const contexto = prompt("Contexto:", "")?.trim() ?? "";
+
+    if (!tipo || !perfil || !dor_principal || !contexto) {
+      alert("Preencha todos os campos.");
+      return;
+    }
+
+    if (!confirm("Confirmar inserção deste ICP?")) return;
+    await addRow("icp", { tipo, perfil, dor_principal, contexto });
+    mutate();
+  }
+
+  async function handleEditICP(icp: ICP) {
+    const tipo = prompt("Tipo:", icp.tipo)?.trim() ?? "";
+    const perfil = prompt("Perfil:", icp.perfil)?.trim() ?? "";
+    const dor_principal = prompt("Dor principal:", icp.dor_principal)?.trim() ?? "";
+    const contexto = prompt("Contexto:", icp.contexto)?.trim() ?? "";
+
+    if (!confirm("Confirmar alteração deste ICP?")) return;
+    await updateRow("icp", icp.id, { tipo, perfil, dor_principal, contexto });
+    mutate();
+  }
+
+  async function handleDeleteICP(icp: ICP) {
+    if (!confirm(`Excluir ICP ${icp.perfil}?`)) return;
+    await deleteRow("icp", icp.id);
+    mutate();
+  }
+
+  async function handleToggleFavorite(icp: ICP) {
+    await toggleFavorite("icp", icp.id, icp.favorito === "true");
+    mutate();
+  }
+
   return (
     <div className="p-8 max-w-4xl">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
           <p className="text-[10px] tracking-widest uppercase text-[#F97316] mb-1">2</p>
           <h1 className="font-display text-3xl text-white">ICP — Para Quem Falamos</h1>
@@ -22,7 +64,15 @@ export default function ICPPage() {
             "Eu sei o que faço. Mas as pessoas certas não me encontram — e quem me encontra não entende o meu valor."
           </p>
         </div>
-        <ExportButton sheet="icp" label="Exportar ICP" />
+        <div className="flex flex-wrap gap-2 items-center">
+          <button
+            onClick={handleAddICP}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple/20 text-white border border-purple/40 hover:bg-purple/30 transition"
+          >
+            Novo ICP
+          </button>
+          <ExportButton sheet="icp" label="Exportar ICP" />
+        </div>
       </div>
 
       {/* Filtro */}
@@ -76,6 +126,12 @@ export default function ICPPage() {
                     </div>
                   </div>
                 </div>
+                <CrudActions
+                  favorited={icp.favorito === "true"}
+                  onFavorite={() => handleToggleFavorite(icp)}
+                  onEdit={() => handleEditICP(icp)}
+                  onDelete={() => handleDeleteICP(icp)}
+                />
               </div>
             </div>
           ))}

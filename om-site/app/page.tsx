@@ -29,7 +29,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="p-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-10">
         <div>

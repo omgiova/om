@@ -16,10 +16,35 @@ const ABAS = {
 };
 
 const HEADER_ROW = 2;
+const HEADER_ROW_OVERRIDES = {
+  categorias: 1,
+};
 
 const SKIP_ROWS = {
   icp: [3, 4],
 };
+
+function detectHeaderRow(dados) {
+  const maxScan = Math.min(5, dados.length);
+  for (let i = 0; i < maxScan; i++) {
+    const row = dados[i];
+    if (!row) continue;
+
+    const normalized = row
+      .map(cell => normalizeKey(String(cell)))
+      .filter(value => value && value !== "");
+
+    if (normalized.length >= 2) {
+      return i + 1;
+    }
+  }
+  return HEADER_ROW;
+}
+
+function getHeaderRow(sheetKey, dados) {
+  if (HEADER_ROW_OVERRIDES[sheetKey]) return HEADER_ROW_OVERRIDES[sheetKey];
+  return detectHeaderRow(dados);
+}
 
 function doGet(e) {
   const p      = e.parameter;
@@ -72,6 +97,28 @@ function doPost(e) {
   }
 }
 
+function detectHeaderRow(dados) {
+  const maxScan = Math.min(5, dados.length);
+  for (let i = 0; i < maxScan; i++) {
+    const row = dados[i];
+    if (!row) continue;
+
+    const normalized = row
+      .map(cell => normalizeKey(String(cell)))
+      .filter(value => value && value !== "");
+
+    if (normalized.length >= 2) {
+      return i + 1;
+    }
+  }
+  return HEADER_ROW;
+}
+
+function getHeaderRow(sheetKey, dados) {
+  if (HEADER_ROW_OVERRIDES[sheetKey]) return HEADER_ROW_OVERRIDES[sheetKey];
+  return detectHeaderRow(dados);
+}
+
 function getData(sheetKey) {
   const nomeDaAba = ABAS[sheetKey];
   if (!nomeDaAba) throw new Error("Aba desconhecida: " + sheetKey);
@@ -81,11 +128,14 @@ function getData(sheetKey) {
   if (!ws) throw new Error("Aba não encontrada na planilha: " + nomeDaAba);
 
   const dados   = ws.getDataRange().getValues();
-  const headers = dados[HEADER_ROW - 1].map(h => normalizeKey(String(h)));
+  const headerRow = getHeaderRow(sheetKey, dados);
+  const headers = dados[headerRow - 1].map(h => normalizeKey(String(h)));
+  const hasId   = headers.includes("id");
   const skip    = SKIP_ROWS[sheetKey] || [];
   const rows    = [];
 
-  for (let i = HEADER_ROW; i < dados.length; i++) {
+  let generatedId = 1;
+  for (let i = headerRow; i < dados.length; i++) {
     const rowNum = i + 1;
     if (skip.includes(rowNum)) continue;
 
@@ -95,6 +145,10 @@ function getData(sheetKey) {
     });
 
     if (Object.values(row).every(v => v === "")) continue;
+    if (!hasId) {
+      row["id"] = String(generatedId).padStart(2, "0");
+      generatedId += 1;
+    }
 
     rows.push(row);
   }
@@ -107,11 +161,19 @@ function addRow(sheetKey, data) {
   const nomeDaAba = ABAS[sheetKey];
   const ss  = SpreadsheetApp.getActiveSpreadsheet();
   const ws  = ss.getSheetByName(nomeDaAba);
-  const headers = ws.getRange(HEADER_ROW, 1, 1, ws.getLastColumn()).getValues()[0]
+  const headerRow = getHeaderRow(sheetKey, ws.getDataRange().getValues());
+  const headers = ws.getRange(headerRow, 1, 1, ws.getLastColumn()).getValues()[0]
     .map(h => normalizeKey(String(h)));
 
+  const extraKeys = Object.keys(data).filter(k => !headers.includes(k));
+  if (extraKeys.length > 0) {
+    ws.getRange(headerRow, headers.length + 1, 1, extraKeys.length)
+      .setValues([extraKeys]);
+    headers.push(...extraKeys);
+  }
+
   const lastRow = ws.getLastRow();
-  const newId   = String(lastRow - HEADER_ROW).padStart(2, "0");
+  const newId   = String(lastRow - headerRow).padStart(2, "0");
   data["id"] = newId;
 
   const newRow = headers.map(h => data[h] || "");
@@ -134,13 +196,29 @@ function updateRow(sheetKey, id, data) {
   const ss  = SpreadsheetApp.getActiveSpreadsheet();
   const ws  = ss.getSheetByName(nomeDaAba);
   const all = ws.getDataRange().getValues();
-  const headers = all[HEADER_ROW - 1].map(h => normalizeKey(String(h)));
+  const headerRow = getHeaderRow(sheetKey, all);
+  const headers = all[headerRow - 1].map(h => normalizeKey(String(h)));
+  const hasId = headers.includes("id");
   const skip    = SKIP_ROWS[sheetKey] || [];
 
-  for (let i = HEADER_ROW; i < all.length; i++) {
+  const extraKeys = Object.keys(data).filter(k => !headers.includes(k));
+  if (extraKeys.length > 0) {
+    ws.getRange(headerRow, headers.length + 1, 1, extraKeys.length)
+      .setValues([extraKeys]);
+    headers.push(...extraKeys);
+  }
+
+  let currentIndex = 0;
+  for (let i = headerRow; i < all.length; i++) {
     const rowNum = i + 1;
     if (skip.includes(rowNum)) continue;
-    if (String(all[i][0]).trim() !== String(id).trim()) continue;
+    currentIndex += 1;
+
+    const rowId = hasId
+      ? String(all[i][0]).trim()
+      : String(currentIndex).padStart(2, "0");
+
+    if (String(rowId) !== String(id).trim()) continue;
 
     headers.forEach((h, j) => {
       if (data[h] !== undefined) {
@@ -158,12 +236,22 @@ function deleteRow(sheetKey, id) {
   const ss  = SpreadsheetApp.getActiveSpreadsheet();
   const ws  = ss.getSheetByName(nomeDaAba);
   const all = ws.getDataRange().getValues();
+  const headerRow = getHeaderRow(sheetKey, all);
+  const headers = all[headerRow - 1].map(h => normalizeKey(String(h)));
+  const hasId = headers.includes("id");
   const skip = SKIP_ROWS[sheetKey] || [];
 
-  for (let i = HEADER_ROW; i < all.length; i++) {
+  let currentIndex = 0;
+  for (let i = headerRow; i < all.length; i++) {
     const rowNum = i + 1;
     if (skip.includes(rowNum)) continue;
-    if (String(all[i][0]).trim() !== String(id).trim()) continue;
+    currentIndex += 1;
+
+    const rowId = hasId
+      ? String(all[i][0]).trim()
+      : String(currentIndex).padStart(2, "0");
+
+    if (String(rowId) !== String(id).trim()) continue;
 
     ws.deleteRow(rowNum);
     return { deleted: id };
