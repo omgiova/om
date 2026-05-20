@@ -70,7 +70,7 @@ export default function PostsPage() {
   const [fmt,    setFmt]    = useState("Todos");
   const [busca,  setBusca]  = useState("");
 
-  const posts: Post[] = data ?? [];
+  const posts: Post[] = (data ?? []) as Post[];
 
   async function handleAddPost() {
     if (!confirm("Confirmar novo post?")) return;
@@ -136,7 +136,7 @@ export default function PostsPage() {
   });
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
@@ -161,7 +161,7 @@ export default function PostsPage() {
           value={busca}
           onChange={e => setBusca(e.target.value)}
           placeholder="Buscar na copy..."
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-white/20 outline-none focus:border-purple/50 w-52"
+          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-white/20 outline-none focus:border-purple/50 w-full sm:w-52"
         />
         <div className="flex gap-1">
           {CATEGORIAS.map(c => (

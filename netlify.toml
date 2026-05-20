@@ -1,0 +1,4 @@
+[build]
+  base    = "om-site"
+  command = "npm run build"
+  publish = "out"

@@ -11,7 +11,7 @@ export default function MateriaisPage() {
   const { data, isLoading, mutate } = useMateriais();
   const [nicho, setNicho] = useState("Todos");
 
-  const materiais: Material[] = data ?? [];
+  const materiais: Material[] = (data ?? []) as Material[];
   const nichos = ["Todos", ...Array.from(new Set(materiais.map(m => m.nicho))).filter(Boolean)];
   const filtrados = nicho === "Todos" ? materiais : materiais.filter(m => m.nicho === nicho);
 
@@ -61,7 +61,7 @@ export default function MateriaisPage() {
   }, {});
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
           <p className="text-[10px] tracking-widest uppercase text-[#F97316] mb-1">4b</p>

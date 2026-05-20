@@ -97,7 +97,7 @@ export default function CategoriasPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
           <p className="text-[10px] tracking-widest uppercase text-[#F97316] mb-1">4a</p>
@@ -130,29 +130,54 @@ export default function CategoriasPage() {
         }
 
         return (
-          <div className="space-y-3">
-            <div className="grid grid-cols-4 gap-4 mb-3">
-              {renderColumns.map(col => (
-                <div key={col.key}>
-                  <h2 className={`text-xs font-semibold uppercase tracking-widest mb-3 border-b pb-2 ${col.color}`}>
-                    {col.label}
-                  </h2>
-                </div>
-              ))}
+          <>
+            {/* Mobile: uma categoria por vez */}
+            <div className="sm:hidden space-y-6">
+              {renderColumns.map(col => {
+                const items = visibleRows.map(row => row[col.key]).filter(Boolean);
+                if (items.length === 0) return null;
+                return (
+                  <div key={col.key}>
+                    <h2 className={`text-xs font-semibold uppercase tracking-widest mb-3 border-b pb-2 ${col.color}`}>
+                      {col.label}
+                    </h2>
+                    <div className="space-y-2">
+                      {items.map((item, i) => (
+                        <div key={i} className="text-sm text-white/60 p-3 rounded-xl bg-white/5 border border-white/5">
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="space-y-2">
-              {visibleRows.map((row, rowIndex) => (
-                <div key={row.id || rowIndex} className="grid grid-cols-4 gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                  {renderColumns.map(col => (
-                    <div key={col.key} className="text-sm text-white/60 min-h-[2.5rem]">
-                      {row[col.key] || ""}
-                    </div>
-                  ))}
-                </div>
-              ))}
+            {/* Desktop: grid de 4 colunas */}
+            <div className="hidden sm:block space-y-3">
+              <div className="grid sm:grid-cols-4 gap-4 mb-3">
+                {renderColumns.map(col => (
+                  <div key={col.key}>
+                    <h2 className={`text-xs font-semibold uppercase tracking-widest mb-3 border-b pb-2 ${col.color}`}>
+                      {col.label}
+                    </h2>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                {visibleRows.map((row, rowIndex) => (
+                  <div key={row.id || rowIndex} className="grid sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+                    {renderColumns.map(col => (
+                      <div key={col.key} className="text-sm text-white/60 min-h-[2.5rem]">
+                        {row[col.key] || ""}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          </>
         );
       })()}
     </div>

@@ -10,8 +10,6 @@
   copycompleta: "copy_completa",
   copy: "copy_completa",
   conteudo: "conteudo",
-  conteudo: "conteudo",
-  secao: "secao",
   secao: "secao",
   seção: "secao",
   chave: "chave",

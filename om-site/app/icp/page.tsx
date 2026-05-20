@@ -11,7 +11,7 @@ export default function ICPPage() {
   const { data, isLoading, mutate } = useICP();
   const [filtro, setFiltro] = useState<"Todos" | "Prioritário" | "Secundário">("Todos");
 
-  const icps: ICP[] = data ?? [];
+  const icps: ICP[] = (data ?? []) as ICP[];
   const filtrados = filtro === "Todos" ? icps : icps.filter(i => i.tipo === filtro);
 
   async function handleAddICP() {
@@ -55,7 +55,7 @@ export default function ICPPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="p-4 sm:p-8 max-w-4xl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
           <p className="text-[10px] tracking-widest uppercase text-[#F97316] mb-1">2</p>
@@ -111,7 +111,7 @@ export default function ICPPage() {
                       {icp.tipo}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-[10px] uppercase tracking-widest text-[#F97316]/60 mb-1">
                         Dor principal

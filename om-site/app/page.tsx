@@ -29,7 +29,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-10">
         <div>
@@ -40,14 +40,14 @@ export default function Dashboard() {
             Studio
           </h1>
           <p className="text-white/40 mt-2 text-sm">
-            Painel de estratégia · Método Fora da Caixa
+            Painel de estratégia
           </p>
         </div>
         <ExportButton sheet="all" label="Exportar projeto completo" />
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
         {stats.map(({ icon: Icon, label, value }) => (
           <div key={label} className="card p-4">
             <div className="flex items-center gap-2 text-white/30 mb-3">
@@ -60,7 +60,7 @@ export default function Dashboard() {
       </div>
 
       {/* Seções */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {sections.map(({ href, num, label, desc }) => (
           <Link key={href} href={href} className="card p-5 group flex items-center justify-between">
             <div className="flex items-center gap-4">
