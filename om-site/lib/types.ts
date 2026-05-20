@@ -28,11 +28,9 @@ export type Comunicamos = {
 
 // ── 4a. Categorias ───────────────────────────────────────────
 export type Categoria = {
-  id?: string;
-  educacao: string;
-  bastidores: string;
-  resultado: string;
-  branding: string;
+  id: string;
+  categoria: string;
+  subcategoria: string;
   favorito?: string;
 };
 
