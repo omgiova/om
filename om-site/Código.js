@@ -370,13 +370,19 @@ function exportBloco(key, rows, filtro) {
 
     case "categorias": {
       b += `## 4a. CATEGORIAS DE CONTEÚDO\n\n`;
-      b += `| Educação | Bastidores | Resultado | Branding |\n`;
-      b += `|---|---|---|---|\n`;
+      const catGrupos = {};
       rows.forEach(r => {
-        const vals = Object.values(r);
-        b += `| ${vals.join(" | ")} |\n`;
+        const cat  = r["categoria"]   || "";
+        const sub  = r["subcategoria"] || "";
+        if (!cat || !sub) return;
+        if (!catGrupos[cat]) catGrupos[cat] = [];
+        catGrupos[cat].push(sub);
       });
-      b += "\n";
+      Object.entries(catGrupos).forEach(([cat, subs]) => {
+        b += `### ${cat}\n`;
+        subs.forEach(s => { b += `- ${s}\n`; });
+        b += "\n";
+      });
       break;
     }
 

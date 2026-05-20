@@ -3,183 +3,156 @@ import { useCategorias } from "@/hooks/useSheet";
 import { addRow, updateRow, deleteRow, toggleFavorite } from "@/lib/api";
 import { ExportButton } from "@/components/ExportButton";
 import { CrudActions } from "@/components/CrudActions";
+import { Categoria } from "@/lib/types";
+import { Plus } from "lucide-react";
+
+function removeAccents(v: string) {
+  return v.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+}
+function normalizeCategoria(v: string) {
+  return removeAccents(v).toLowerCase().trim();
+}
 
 const COLS = [
-  { key: "educacao",   label: "Educação",   color: "border-purple/40  text-purple-300" },
-  { key: "bastidores", label: "Bastidores", color: "border-violet/40  text-violet-300" },
-  { key: "resultado",  label: "Resultado",  color: "border-green-500/40 text-green-400" },
-  { key: "branding",   label: "Branding",   color: "border-[#F97316]/40 text-[#F97316]" },
+  {
+    key: "educacao",
+    label: "Educação",
+    accent: "text-purple-300",
+    border: "border-purple-500/40",
+    chipBg: "bg-purple-500/10 text-purple-300",
+    btnBg: "bg-purple-500/10 text-purple-300 border-purple-500/30 hover:bg-purple-500/20",
+  },
+  {
+    key: "bastidores",
+    label: "Bastidores",
+    accent: "text-violet-300",
+    border: "border-violet-500/40",
+    chipBg: "bg-violet-500/10 text-violet-300",
+    btnBg: "bg-violet-500/10 text-violet-300 border-violet-500/30 hover:bg-violet-500/20",
+  },
+  {
+    key: "resultado",
+    label: "Resultado",
+    accent: "text-green-400",
+    border: "border-green-500/40",
+    chipBg: "bg-green-500/10 text-green-400",
+    btnBg: "bg-green-500/10 text-green-400 border-green-500/30 hover:bg-green-500/20",
+  },
+  {
+    key: "branding",
+    label: "Branding",
+    accent: "text-[#F97316]",
+    border: "border-[#F97316]/40",
+    chipBg: "bg-[#F97316]/10 text-[#F97316]",
+    btnBg: "bg-[#F97316]/10 text-[#F97316] border-[#F97316]/30 hover:bg-[#F97316]/20",
+  },
 ];
-
-const FIELD_ALIASES: Record<string, string> = {
-  educacao: "educacao",
-  educação: "educacao",
-  bastidores: "bastidores",
-  resultado: "resultado",
-  branding: "branding",
-};
-
-function normalizeKey(key: string): string {
-  return key
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w\s]/g, " ")
-    .replace(/\s+/g, "_")
-    .replace(/_+/g, "_");
-}
-
-function normalizeRow(row: Record<string, string>): Record<string, string> {
-  const normalized: Record<string, string> = {};
-  Object.entries(row).forEach(([key, value]) => {
-    const field = FIELD_ALIASES[normalizeKey(key)] ?? normalizeKey(key);
-    normalized[field] = value;
-  });
-  return normalized;
-}
 
 export default function CategoriasPage() {
   const { data, isLoading, mutate } = useCategorias();
-  const rows: Record<string, string>[] = (data ?? []).map(normalizeRow);
-  const hasKnownColumns = rows.some(row => COLS.some(col => Boolean(row[col.key])));
-  const fallbackKeys = rows[0]
-    ? Object.keys(rows[0]).filter(key => !["id", "favorito", "favorita"].includes(key)).slice(0, 4)
-    : [];
-  const renderColumns = hasKnownColumns
-    ? COLS
-    : fallbackKeys.map((key, index) => ({
-        key,
-        label: COLS[index]?.label ?? key,
-        color: COLS[index]?.color ?? "border-white/10 text-white/40",
-      }));
+  const rows: Categoria[] = (data ?? []) as Categoria[];
 
-  async function handleAddCategoria() {
-    if (!confirm("Confirmar novo item em categorias?")) return;
+  // Agrupa por categoria normalizada
+  const grupos = rows.reduce<Record<string, Categoria[]>>((acc, r) => {
+    const key = normalizeCategoria(r.categoria ?? "");
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(r);
+    return acc;
+  }, {});
 
-    const educacao = prompt("Educação:", "")?.trim() ?? "";
-    const bastidores = prompt("Bastidores:", "")?.trim() ?? "";
-    const resultado = prompt("Resultado:", "")?.trim() ?? "";
-    const branding = prompt("Branding:", "")?.trim() ?? "";
-
-    if (!educacao && !bastidores && !resultado && !branding) {
-      alert("Nenhum dado informado. Operação cancelada.");
-      return;
-    }
-
-    if (!confirm("Confirmar inserção deste novo item?")) return;
-
-    await addRow("categorias", { educacao, bastidores, resultado, branding });
+  async function handleAdd(categoriaKey: string, categoriaLabel: string) {
+    const subcategoria = prompt(`Nova subcategoria em ${categoriaLabel}:`)?.trim() ?? "";
+    if (!subcategoria) return;
+    if (!confirm(`Adicionar "${subcategoria}" em ${categoriaLabel}?`)) return;
+    await addRow("categorias", { categoria: categoriaLabel, subcategoria });
     mutate();
   }
 
-  async function handleUpdateCategoria(row: Record<string, string>) {
-    const educacao = prompt("Educação:", row.educacao || "")?.trim() ?? "";
-    const bastidores = prompt("Bastidores:", row.bastidores || "")?.trim() ?? "";
-    const resultado = prompt("Resultado:", row.resultado || "")?.trim() ?? "";
-    const branding = prompt("Branding:", row.branding || "")?.trim() ?? "";
-
-    if (!confirm("Confirmar atualização deste item?")) return;
-
-    await updateRow("categorias", row.id || "", { educacao, bastidores, resultado, branding });
+  async function handleEdit(item: Categoria) {
+    const subcategoria = prompt("Editar subcategoria:", item.subcategoria)?.trim() ?? "";
+    if (!subcategoria) return;
+    if (!confirm(`Salvar "${subcategoria}"?`)) return;
+    await updateRow("categorias", item.id, { categoria: item.categoria, subcategoria });
     mutate();
   }
 
-  async function handleDeleteCategoria(row: Record<string, string>) {
-    if (!confirm(`Excluir item "${row.educacao || row.bastidores || row.resultado || row.branding}"?`)) return;
-    await deleteRow("categorias", row.id || "");
+  async function handleDelete(item: Categoria) {
+    if (!confirm(`Excluir "${item.subcategoria}"?`)) return;
+    await deleteRow("categorias", item.id);
     mutate();
   }
 
-  async function handleToggleFavorite(row: Record<string, string>) {
-    await toggleFavorite("categorias", row.id || "", row.favorito === "true");
+  async function handleToggle(item: Categoria) {
+    await toggleFavorite("categorias", item.id, item.favorito === "true");
     mutate();
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
+    <div className="p-4 sm:p-8 max-w-5xl">
+      {/* Header */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-10">
         <div>
           <p className="text-[10px] tracking-widest uppercase text-[#F97316] mb-1">4a</p>
           <h1 className="font-display text-3xl text-white">Categorias de Conteúdo</h1>
-          <p className="text-white/30 text-sm mt-1">
-            A voz da Open Mídia se organiza em 4 categorias — todo conteúdo produzido se encaixa em uma delas.
+          <p className="text-white/30 text-sm mt-2">
+            A voz da Open Mídia se organiza em 4 categorias — todo conteúdo se encaixa em uma delas.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <button
-            onClick={handleAddCategoria}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple/20 text-white border border-purple/40 hover:bg-purple/30 transition"
-          >
-            Nova linha
-          </button>
-          <ExportButton sheet="categorias" label="Exportar categorias" />
-        </div>
+        <ExportButton sheet="categorias" label="Exportar categorias" />
       </div>
 
       {isLoading ? (
         <p className="text-white/30 text-sm">Carregando...</p>
-      ) : (() => {
-        const visibleRows = rows.filter(row => renderColumns.some(col => Boolean(row[col.key])));
-        if (visibleRows.length === 0) {
-          return (
-            <p className="text-white/40 text-sm">
-              Nenhuma categoria carregada. Verifique a planilha ou a implantação do Apps Script.
-            </p>
-          );
-        }
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {COLS.map(col => {
+            const items = grupos[col.key] ?? [];
+            return (
+              <div key={col.key} className="card p-5 flex flex-col gap-4">
+                {/* Cabeçalho da categoria */}
+                <div className={`flex items-center justify-between pb-3 border-b ${col.border}`}>
+                  <h2 className={`text-xs font-semibold uppercase tracking-[.2em] ${col.accent}`}>
+                    {col.label}
+                  </h2>
+                  <span className="text-[10px] text-white/20">{items.length}</span>
+                </div>
 
-        return (
-          <>
-            {/* Mobile: uma categoria por vez */}
-            <div className="sm:hidden space-y-6">
-              {renderColumns.map(col => {
-                const items = visibleRows.map(row => row[col.key]).filter(Boolean);
-                if (items.length === 0) return null;
-                return (
-                  <div key={col.key}>
-                    <h2 className={`text-xs font-semibold uppercase tracking-widest mb-3 border-b pb-2 ${col.color}`}>
-                      {col.label}
-                    </h2>
-                    <div className="space-y-2">
-                      {items.map((item, i) => (
-                        <div key={i} className="text-sm text-white/60 p-3 rounded-xl bg-white/5 border border-white/5">
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop: grid de 4 colunas */}
-            <div className="hidden sm:block space-y-3">
-              <div className="grid sm:grid-cols-4 gap-4 mb-3">
-                {renderColumns.map(col => (
-                  <div key={col.key}>
-                    <h2 className={`text-xs font-semibold uppercase tracking-widest mb-3 border-b pb-2 ${col.color}`}>
-                      {col.label}
-                    </h2>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-2">
-                {visibleRows.map((row, rowIndex) => (
-                  <div key={row.id || rowIndex} className="grid sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                    {renderColumns.map(col => (
-                      <div key={col.key} className="text-sm text-white/60 min-h-[2.5rem]">
-                        {row[col.key] || ""}
+                {/* Subcategorias */}
+                <div className="flex flex-col gap-2">
+                  {items.length === 0 && (
+                    <p className="text-white/20 text-xs italic">Nenhuma subcategoria.</p>
+                  )}
+                  {items.map(item => (
+                    <div
+                      key={item.id}
+                      className="group flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/4 border border-white/5"
+                    >
+                      <span className="text-sm text-white/70 leading-snug">{item.subcategoria}</span>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <CrudActions
+                          favorited={item.favorito === "true"}
+                          onFavorite={() => handleToggle(item)}
+                          onEdit={() => handleEdit(item)}
+                          onDelete={() => handleDelete(item)}
+                        />
                       </div>
-                    ))}
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Botão nova subcategoria */}
+                <button
+                  onClick={() => handleAdd(col.key, col.label)}
+                  className={`mt-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${col.btnBg}`}
+                >
+                  <Plus size={12} />
+                  Nova subcategoria
+                </button>
               </div>
-            </div>
-          </>
-        );
-      })()}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
