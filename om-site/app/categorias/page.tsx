@@ -22,7 +22,6 @@ const CAT_HOVER: Record<string, string> = {
   "Branding":   "card-hover-orange",
 };
 
-// Normaliza a chave da categoria vinda da planilha (ex: "EDUCAÇÃO" → "Educação")
 const CAT_NORMALIZE: Record<string, string> = {
   "educacao":   "Educação",
   "bastidores": "Bastidores",
@@ -70,7 +69,6 @@ export default function CategoriasPage() {
   const { message: toast, show: showToast, hide: hideToast } = useToast();
   const rows: Record<string, string>[] = (data ?? []).map(normalizeRow);
 
-  // Agrupa por categoria, resolvendo o CAPS da planilha
   const grupos: Record<string, Record<string, string>[]> = Object.fromEntries(
     CATEGORIAS.map(cat => [cat, []])
   );
@@ -79,7 +77,6 @@ export default function CategoriasPage() {
     if (cat in grupos) grupos[cat].push(row);
   });
 
-  // Favoritas sobem pro topo de cada grupo
   Object.values(grupos).forEach(items =>
     items.sort((a, b) => (b.favorito === "true" ? 1 : 0) - (a.favorito === "true" ? 1 : 0))
   );
@@ -88,7 +85,6 @@ export default function CategoriasPage() {
     const subcategoria = prompt(`Nova subcategoria em "${categoria}":`, "")?.trim() ?? "";
     if (!subcategoria) return;
     if (!confirm(`Adicionar "${subcategoria}" em ${categoria}?`)) return;
-    // Envia o valor em CAPS para manter consistência com a planilha
     await addRow("categorias", { categoria: categoria.toUpperCase(), subcategoria });
     mutate();
   }
@@ -136,7 +132,6 @@ export default function CategoriasPage() {
             const color = CAT_COLOR[cat] ?? "border-white/10 text-white/40";
             return (
               <div key={cat} className={`card p-4 ${CAT_HOVER[cat] ?? ""}`}>
-                {/* Cabeçalho da categoria */}
                 <div className={`flex items-center justify-between border-b pb-2 mb-3 ${color}`}>
                   <h2 className="text-xs font-semibold uppercase tracking-widest">{cat}</h2>
                   <button
@@ -148,7 +143,6 @@ export default function CategoriasPage() {
                   </button>
                 </div>
 
-                {/* Subcategorias */}
                 <div className="space-y-1.5">
                   {items.length === 0 && (
                     <p className="text-white/20 text-xs italic py-1">Sem subcategorias</p>
