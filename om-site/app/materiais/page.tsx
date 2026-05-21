@@ -4,16 +4,20 @@ import { useMateriais } from "@/hooks/useSheet";
 import { addRow, updateRow, deleteRow, toggleFavorite } from "@/lib/api";
 import { ExportButton } from "@/components/ExportButton";
 import { CrudActions } from "@/components/CrudActions";
+import { Toast } from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
 import { Material } from "@/lib/types";
 import clsx from "clsx";
 
 export default function MateriaisPage() {
   const { data, isLoading, mutate } = useMateriais();
   const [nicho, setNicho] = useState("Todos");
+  const { message: toast, show: showToast, hide: hideToast } = useToast();
 
   const materiais: Material[] = (data ?? []) as Material[];
   const nichos = ["Todos", ...Array.from(new Set(materiais.map(m => m.nicho))).filter(Boolean)];
-  const filtrados = nicho === "Todos" ? materiais : materiais.filter(m => m.nicho === nicho);
+  const filtrados = [...(nicho === "Todos" ? materiais : materiais.filter(m => m.nicho === nicho))]
+    .sort((a, b) => (b.favorito === "true" ? 1 : 0) - (a.favorito === "true" ? 1 : 0));
 
   async function handleAddMaterial() {
     if (!confirm("Confirmar novo material?")) return;
@@ -49,7 +53,9 @@ export default function MateriaisPage() {
   }
 
   async function handleToggleFavorite(material: Material) {
-    await toggleFavorite("materiais", material.id, material.favorito === "true");
+    const isFav = material.favorito === "true";
+    await toggleFavorite("materiais", material.id, isFav);
+    showToast(isFav ? "Removido dos favoritos" : "Adicionado aos favoritos");
     mutate();
   }
 
@@ -129,6 +135,7 @@ export default function MateriaisPage() {
           ))}
         </div>
       )}
+      <Toast message={toast} onClose={hideToast} />
     </div>
   );
 }

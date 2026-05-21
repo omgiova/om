@@ -4,13 +4,18 @@ import { useGanchos } from "@/hooks/useSheet";
 import { addRow, updateRow, deleteRow, toggleFavorite } from "@/lib/api";
 import { ExportButton } from "@/components/ExportButton";
 import { CrudActions } from "@/components/CrudActions";
+import { Toast } from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
 import { Copy, Check } from "lucide-react";
 
 export default function GanchosPage() {
   const { data, isLoading, mutate } = useGanchos();
   const [copied, setCopied] = useState<string | null>(null);
+  const { message: toast, show: showToast, hide: hideToast } = useToast();
 
-  const ganchos = data ?? [];
+  const ganchos = [...(data ?? [])].sort((a: Record<string, string>, b: Record<string, string>) =>
+    (b.favorito === "true" ? 1 : 0) - (a.favorito === "true" ? 1 : 0)
+  );
 
   async function handleAddGancho() {
     if (!confirm("Confirmar novo gancho?")) return;
@@ -44,7 +49,9 @@ export default function GanchosPage() {
   }
 
   async function handleToggleFavorite(g: Record<string, string>) {
-    await toggleFavorite("ganchos", g["id"] || "", g.favorito === "true");
+    const isFav = g.favorito === "true";
+    await toggleFavorite("ganchos", g["id"] || "", isFav);
+    showToast(isFav ? "Removido dos favoritos" : "Adicionado aos favoritos");
     mutate();
   }
 
@@ -124,6 +131,7 @@ export default function GanchosPage() {
           })}
         </div>
       )}
+      <Toast message={toast} onClose={hideToast} />
     </div>
   );
 }

@@ -3,21 +3,44 @@ import { useCategorias } from "@/hooks/useSheet";
 import { addRow, updateRow, deleteRow, toggleFavorite } from "@/lib/api";
 import { ExportButton } from "@/components/ExportButton";
 import { CrudActions } from "@/components/CrudActions";
+import { Toast } from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
 
-const COLS = [
-  { key: "educacao",   label: "Educação",   color: "border-purple/40  text-purple-300" },
-  { key: "bastidores", label: "Bastidores", color: "border-violet/40  text-violet-300" },
-  { key: "resultado",  label: "Resultado",  color: "border-green-500/40 text-green-400" },
-  { key: "branding",   label: "Branding",   color: "border-[#F97316]/40 text-[#F97316]" },
-];
+const CATEGORIAS = ["Educação", "Bastidores", "Resultado", "Branding"] as const;
 
-const FIELD_ALIASES: Record<string, string> = {
-  educacao: "educacao",
-  educação: "educacao",
-  bastidores: "bastidores",
-  resultado: "resultado",
-  branding: "branding",
+const CAT_COLOR: Record<string, string> = {
+  "Educação":   "border-white/90 text-white-300",
+  "Bastidores": "border-violet/80  text-violet-300",
+  "Resultado":  "border-green-400/60 text-green-400",
+  "Branding":   "border-[#F97316]/60 text-[#F97316]",
 };
+
+const CAT_HOVER: Record<string, string> = {
+  "Educação":   "card-hover-white",
+  "Bastidores": "",
+  "Resultado":  "card-hover-green",
+  "Branding":   "card-hover-orange",
+};
+
+// Normaliza a chave da categoria vinda da planilha (ex: "EDUCAÇÃO" → "Educação")
+const CAT_NORMALIZE: Record<string, string> = {
+  "educacao":   "Educação",
+  "bastidores": "Bastidores",
+  "resultado":  "Resultado",
+  "branding":   "Branding",
+};
+
+function slugify(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
+}
+
+function resolveCategoria(raw: string): string {
+  return CAT_NORMALIZE[slugify(raw)] ?? raw;
+}
 
 function normalizeKey(key: string): string {
   return key
@@ -33,66 +56,61 @@ function normalizeKey(key: string): string {
 function normalizeRow(row: Record<string, string>): Record<string, string> {
   const normalized: Record<string, string> = {};
   Object.entries(row).forEach(([key, value]) => {
-    const field = FIELD_ALIASES[normalizeKey(key)] ?? normalizeKey(key);
-    normalized[field] = value;
+    normalized[normalizeKey(key)] = value;
   });
   return normalized;
 }
 
+function getSubcategoria(row: Record<string, string>): string {
+  return row["subcategoria"] || row["subcategory"] || "";
+}
+
 export default function CategoriasPage() {
   const { data, isLoading, mutate } = useCategorias();
+  const { message: toast, show: showToast, hide: hideToast } = useToast();
   const rows: Record<string, string>[] = (data ?? []).map(normalizeRow);
-  const hasKnownColumns = rows.some(row => COLS.some(col => Boolean(row[col.key])));
-  const fallbackKeys = rows[0]
-    ? Object.keys(rows[0]).filter(key => !["id", "favorito", "favorita"].includes(key)).slice(0, 4)
-    : [];
-  const renderColumns = hasKnownColumns
-    ? COLS
-    : fallbackKeys.map((key, index) => ({
-        key,
-        label: COLS[index]?.label ?? key,
-        color: COLS[index]?.color ?? "border-white/10 text-white/40",
-      }));
 
-  async function handleAddCategoria() {
-    if (!confirm("Confirmar novo item em categorias?")) return;
+  // Agrupa por categoria, resolvendo o CAPS da planilha
+  const grupos: Record<string, Record<string, string>[]> = Object.fromEntries(
+    CATEGORIAS.map(cat => [cat, []])
+  );
+  rows.forEach(row => {
+    const cat = resolveCategoria(row["categoria"] || "");
+    if (cat in grupos) grupos[cat].push(row);
+  });
 
-    const educacao = prompt("Educação:", "")?.trim() ?? "";
-    const bastidores = prompt("Bastidores:", "")?.trim() ?? "";
-    const resultado = prompt("Resultado:", "")?.trim() ?? "";
-    const branding = prompt("Branding:", "")?.trim() ?? "";
+  // Favoritas sobem pro topo de cada grupo
+  Object.values(grupos).forEach(items =>
+    items.sort((a, b) => (b.favorito === "true" ? 1 : 0) - (a.favorito === "true" ? 1 : 0))
+  );
 
-    if (!educacao && !bastidores && !resultado && !branding) {
-      alert("Nenhum dado informado. Operação cancelada.");
-      return;
-    }
-
-    if (!confirm("Confirmar inserção deste novo item?")) return;
-
-    await addRow("categorias", { educacao, bastidores, resultado, branding });
+  async function handleAdd(categoria: string) {
+    const subcategoria = prompt(`Nova subcategoria em "${categoria}":`, "")?.trim() ?? "";
+    if (!subcategoria) return;
+    if (!confirm(`Adicionar "${subcategoria}" em ${categoria}?`)) return;
+    // Envia o valor em CAPS para manter consistência com a planilha
+    await addRow("categorias", { categoria: categoria.toUpperCase(), subcategoria });
     mutate();
   }
 
-  async function handleUpdateCategoria(row: Record<string, string>) {
-    const educacao = prompt("Educação:", row.educacao || "")?.trim() ?? "";
-    const bastidores = prompt("Bastidores:", row.bastidores || "")?.trim() ?? "";
-    const resultado = prompt("Resultado:", row.resultado || "")?.trim() ?? "";
-    const branding = prompt("Branding:", row.branding || "")?.trim() ?? "";
-
-    if (!confirm("Confirmar atualização deste item?")) return;
-
-    await updateRow("categorias", row.id || "", { educacao, bastidores, resultado, branding });
+  async function handleEdit(row: Record<string, string>) {
+    const subcategoria = prompt("Subcategoria:", getSubcategoria(row))?.trim() ?? "";
+    if (!subcategoria) return;
+    if (!confirm("Confirmar atualização?")) return;
+    await updateRow("categorias", row.id || "", { subcategoria });
     mutate();
   }
 
-  async function handleDeleteCategoria(row: Record<string, string>) {
-    if (!confirm(`Excluir item "${row.educacao || row.bastidores || row.resultado || row.branding}"?`)) return;
+  async function handleDelete(row: Record<string, string>) {
+    if (!confirm(`Excluir "${getSubcategoria(row)}"?`)) return;
     await deleteRow("categorias", row.id || "");
     mutate();
   }
 
   async function handleToggleFavorite(row: Record<string, string>) {
-    await toggleFavorite("categorias", row.id || "", row.favorito === "true");
+    const isFav = row.favorito === "true";
+    await toggleFavorite("categorias", row.id || "", isFav);
+    showToast(isFav ? "Removido dos favoritos" : "Adicionado aos favoritos");
     mutate();
   }
 
@@ -106,80 +124,60 @@ export default function CategoriasPage() {
             A voz da Open Mídia se organiza em 4 categorias — todo conteúdo produzido se encaixa em uma delas.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <button
-            onClick={handleAddCategoria}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-purple/20 text-white border border-purple/40 hover:bg-purple/30 transition"
-          >
-            Nova linha
-          </button>
-          <ExportButton sheet="categorias" label="Exportar categorias" />
-        </div>
+        <ExportButton sheet="categorias" label="Exportar categorias" />
       </div>
 
       {isLoading ? (
         <p className="text-white/30 text-sm">Carregando...</p>
-      ) : (() => {
-        const visibleRows = rows.filter(row => renderColumns.some(col => Boolean(row[col.key])));
-        if (visibleRows.length === 0) {
-          return (
-            <p className="text-white/40 text-sm">
-              Nenhuma categoria carregada. Verifique a planilha ou a implantação do Apps Script.
-            </p>
-          );
-        }
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {CATEGORIAS.map(cat => {
+            const items = grupos[cat] ?? [];
+            const color = CAT_COLOR[cat] ?? "border-white/10 text-white/40";
+            return (
+              <div key={cat} className={`card p-4 ${CAT_HOVER[cat] ?? ""}`}>
+                {/* Cabeçalho da categoria */}
+                <div className={`flex items-center justify-between border-b pb-2 mb-3 ${color}`}>
+                  <h2 className="text-xs font-semibold uppercase tracking-widest">{cat}</h2>
+                  <button
+                    onClick={() => handleAdd(cat)}
+                    title={`Adicionar subcategoria em ${cat}`}
+                    className="text-white/20 hover:text-white/70 transition text-lg leading-none pb-0.5"
+                  >
+                    +
+                  </button>
+                </div>
 
-        return (
-          <>
-            {/* Mobile: uma categoria por vez */}
-            <div className="sm:hidden space-y-6">
-              {renderColumns.map(col => {
-                const items = visibleRows.map(row => row[col.key]).filter(Boolean);
-                if (items.length === 0) return null;
-                return (
-                  <div key={col.key}>
-                    <h2 className={`text-xs font-semibold uppercase tracking-widest mb-3 border-b pb-2 ${col.color}`}>
-                      {col.label}
-                    </h2>
-                    <div className="space-y-2">
-                      {items.map((item, i) => (
-                        <div key={i} className="text-sm text-white/60 p-3 rounded-xl bg-white/5 border border-white/5">
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Desktop: grid de 4 colunas */}
-            <div className="hidden sm:block space-y-3">
-              <div className="grid sm:grid-cols-4 gap-4 mb-3">
-                {renderColumns.map(col => (
-                  <div key={col.key}>
-                    <h2 className={`text-xs font-semibold uppercase tracking-widest mb-3 border-b pb-2 ${col.color}`}>
-                      {col.label}
-                    </h2>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-2">
-                {visibleRows.map((row, rowIndex) => (
-                  <div key={row.id || rowIndex} className="grid sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-                    {renderColumns.map(col => (
-                      <div key={col.key} className="text-sm text-white/60 min-h-[2.5rem]">
-                        {row[col.key] || ""}
+                {/* Subcategorias */}
+                <div className="space-y-1.5">
+                  {items.length === 0 && (
+                    <p className="text-white/20 text-xs italic py-1">Sem subcategorias</p>
+                  )}
+                  {items.map((row, i) => (
+                    <div
+                      key={row.id || i}
+                      className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/5 group"
+                    >
+                      <p className="text-sm text-white/60 leading-snug flex-1">
+                        {getSubcategoria(row)}
+                      </p>
+                      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CrudActions
+                          favorited={row.favorito === "true"}
+                          onFavorite={() => handleToggleFavorite(row)}
+                          onEdit={() => handleEdit(row)}
+                          onDelete={() => handleDelete(row)}
+                        />
                       </div>
-                    ))}
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
-        );
-      })()}
+            );
+          })}
+        </div>
+      )}
+      <Toast message={toast} onClose={hideToast} />
     </div>
   );
 }

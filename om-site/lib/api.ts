@@ -19,7 +19,7 @@ async function post(body: object) {
   const res = await fetch(BASE!, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "text/plain",
     },
     body: JSON.stringify(body),
   });

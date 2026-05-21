@@ -4,6 +4,8 @@ import { usePosts } from "@/hooks/useSheet";
 import { addRow, updateRow, deleteRow, toggleFavorite } from "@/lib/api";
 import { ExportButton } from "@/components/ExportButton";
 import { CrudActions } from "@/components/CrudActions";
+import { Toast } from "@/components/Toast";
+import { useToast } from "@/hooks/useToast";
 import { Post } from "@/lib/types";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import clsx from "clsx";
@@ -69,6 +71,7 @@ export default function PostsPage() {
   const [cat,    setCat]    = useState("Todas");
   const [fmt,    setFmt]    = useState("Todos");
   const [busca,  setBusca]  = useState("");
+  const { message: toast, show: showToast, hide: hideToast } = useToast();
 
   const posts: Post[] = (data ?? []) as Post[];
 
@@ -124,16 +127,20 @@ export default function PostsPage() {
   }
 
   async function handleToggleFavorite(post: Post) {
-    await toggleFavorite("posts", post.id, post.favorito === "true");
+    const isFav = post.favorito === "true";
+    await toggleFavorite("posts", post.id, isFav);
+    showToast(isFav ? "Removido dos favoritos" : "Adicionado aos favoritos");
     mutate();
   }
 
-  const filtrados = posts.filter(p => {
-    const okCat = cat === "Todas" || p.categoria === cat;
-    const okFmt = fmt === "Todos" || p.formato === fmt;
-    const okBusca = !busca || p.copy_completa?.toLowerCase().includes(busca.toLowerCase());
-    return okCat && okFmt && okBusca;
-  });
+  const filtrados = posts
+    .filter(p => {
+      const okCat = cat === "Todas" || p.categoria === cat;
+      const okFmt = fmt === "Todos" || p.formato === fmt;
+      const okBusca = !busca || p.copy_completa?.toLowerCase().includes(busca.toLowerCase());
+      return okCat && okFmt && okBusca;
+    })
+    .sort((a, b) => (b.favorito === "true" ? 1 : 0) - (a.favorito === "true" ? 1 : 0));
 
   return (
     <div className="p-4 sm:p-8 max-w-4xl">
@@ -212,6 +219,7 @@ export default function PostsPage() {
           )}
         </div>
       )}
+      <Toast message={toast} onClose={hideToast} />
     </div>
   );
 }

@@ -50,6 +50,16 @@ body {
   background: rgba(255,255,255,.07);
   border-color: rgba(139,92,246,.3);
 }
+.card-hover-white:hover  { border-color: rgba(255,255,255,0.3); }
+.card-hover-green:hover  { border-color: rgba(74,222,128,0.3); }
+.card-hover-orange:hover { border-color: rgba(249,115,22,0.3); }
+
+/* toast */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.2s ease-out; }
 
 /* prose copy */
 .copy-text {
