@@ -111,7 +111,7 @@ export default function CategoriasPage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-8">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
         <div>
           <p className="text-[10px] tracking-widest uppercase text-[#F97316] mb-1">4a</p>
@@ -151,19 +151,21 @@ export default function CategoriasPage() {
                     <div
                       key={row.id || i}
                       className={
-                        `flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/5 ${row.favorito === 'true' ? 'card-fav' : ''} group`
+                        `flex flex-col px-3 py-2 rounded-lg bg-white/5 border border-white/5 ${row.favorito === 'true' ? 'card-fav' : ''}`
                       }
                     >
-                      <p className="text-sm text-white/60 leading-snug flex-1 min-w-0 line-clamp-2">
-                        {getSubcategoria(row)}
-                      </p>
-                      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end">
                         <CrudActions
                           favorited={row.favorito === "true"}
                           onFavorite={() => handleToggleFavorite(row)}
                           onEdit={() => handleEdit(row)}
                           onDelete={() => handleDelete(row)}
                         />
+                      </div>
+                      <div className="flex-1 flex items-center pt-6 pb-10">
+                        <p className="text-base font-bold text-white/60 leading-snug w-full">
+                          {getSubcategoria(row)}
+                        </p>
                       </div>
                     </div>
                   ))}

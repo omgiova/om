@@ -48,7 +48,7 @@ export default function IdentidadePage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-4xl">
+    <div className="p-4 sm:p-8">
       {/* Header */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-10">
         <div>
