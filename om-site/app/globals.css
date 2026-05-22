@@ -54,6 +54,12 @@ body {
 .card-hover-green:hover  { border-color: rgba(74,222,128,0.3); }
 .card-hover-orange:hover { border-color: rgba(249,115,22,0.3); }
 
+/* favorito: borda branca menos transparente para destacar */
+.card-fav { border-color: rgba(255,255,255,0.35) !important; }
+
+/* utility: limitar texto a 2 linhas com truncamento */
+/* removed .line-clamp-2 to avoid hiding text; items will wrap naturally */
+
 /* toast */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(8px); }

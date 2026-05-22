@@ -112,12 +112,12 @@ export default function MateriaisPage() {
               </h2>
               <div className="flex flex-col gap-2">
                 {items.map(m => (
-                  <div key={m.id} className="card p-4">
+                  <div key={m.id} className={`card p-4 ${m.favorito === 'true' ? 'card-fav' : ''}`}>
                     <div className="flex items-start gap-4">
                       <span className="text-[10px] font-mono text-white/20 mt-0.5 w-6 text-right shrink-0">
                         {m.id}
                       </span>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm text-white/80">{m.titulo}</p>
                         <span className="chip chip-purple mt-2">{m.principio}</span>
                       </div>

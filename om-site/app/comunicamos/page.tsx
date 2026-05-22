@@ -90,7 +90,7 @@ export default function ComunicamosPage() {
                       <span className="text-[11px] font-mono text-purple-400/60 w-40 shrink-0 pt-0.5 text-right">
                         {chave}
                       </span>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
                           {conteudo}
                         </p>

@@ -26,7 +26,7 @@ function PostCard({ post, onEdit, onDelete, onFavorite }: { post: Post; onEdit: 
   const conceito = linhas[0] ?? "";
 
   return (
-    <div className="card overflow-hidden">
+    <div className={`card overflow-hidden ${post.favorito === 'true' ? 'card-fav' : ''}`}>
       <button
         onClick={() => setOpen(o => !o)}
         className="w-full p-4 text-left flex items-start gap-4"

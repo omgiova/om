@@ -98,12 +98,12 @@ export default function GanchosPage() {
             const isCopied = copied === id;
 
             return (
-              <div key={id} className="card p-5 group">
+              <div key={id} className={`card p-5 group ${g.favorito === 'true' ? 'card-fav' : ''}`}>
                 <div className="flex items-start gap-4">
                   <span className="text-[10px] font-mono text-white/20 mt-1 w-6 text-right shrink-0">
                     {g["id"]}
                   </span>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <blockquote className="text-white/80 text-sm leading-relaxed border-l-2 border-[#F97316]/30 pl-4 mb-3">
                       "{texto}"
                     </blockquote>

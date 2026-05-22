@@ -105,8 +105,8 @@ export default function PesquisasPage() {
               </h2>
               <div className="space-y-3">
                 {estruturais.map((r, i) => (
-                  <div key={i} className="card p-4 flex items-start gap-4">
-                    <div className="flex-1">
+                  <div key={i} className={`card p-4 flex items-start gap-4 ${r.favorito === 'true' ? 'card-fav' : ''}`}>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm text-white/80 font-medium">
                         {getVal(r, ["dado", "termo"])}
                       </p>
@@ -138,8 +138,8 @@ export default function PesquisasPage() {
                   const vol  = r["volume"] || "–";
                   const obs  = getVal(r, ["observa", "obs"]);
                   return (
-                    <div key={i} className="card p-4 flex items-start gap-4">
-                      <div className="flex-1">
+                    <div key={i} className={`card p-4 flex items-start gap-4 ${r.favorito === 'true' ? 'card-fav' : ''}`}>
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm text-white/80 font-medium">{dado}</p>
                         <p className="text-xs text-white/30 mt-1">{obs}</p>
                       </div>
@@ -169,8 +169,8 @@ export default function PesquisasPage() {
               </h2>
               <div className="space-y-3">
                 {outros.map((r, i) => (
-                  <div key={i} className="card p-4 flex items-start gap-4">
-                    <div className="flex-1">
+                  <div key={i} className={`card p-4 flex items-start gap-4 ${r.favorito === 'true' ? 'card-fav' : ''}`}>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm text-white/60 leading-relaxed whitespace-pre-wrap">
                         {Object.values(r).filter(Boolean).join(" · ")}
                       </p>

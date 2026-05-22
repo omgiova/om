@@ -96,12 +96,12 @@ export default function ICPPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {filtrados.map(icp => (
-            <div key={icp.id} className="card p-6">
+            <div key={icp.id} className={`card p-6 ${icp.favorito === 'true' ? 'card-fav' : ''}`}>
               <div className="flex items-start gap-4">
                 <span className="text-[10px] font-mono text-white/20 mt-1 w-6 text-right shrink-0">
                   {icp.id}
                 </span>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-3">
                     <h2 className="text-base font-semibold text-white">{icp.perfil}</h2>
                     <span className={clsx(
