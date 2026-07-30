@@ -21,6 +21,9 @@ export function Sidebar() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
 
+  // /diagnostico é protótipo de tela limpa: sem menu e sem marca.
+  if (path?.startsWith("/diagnostico")) return null;
+
   return (
     <>
       {/* Barra topo — só mobile */}
