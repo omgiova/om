@@ -188,12 +188,24 @@ const sBotaoTexto: React.CSSProperties = {
   cursor: "pointer",
 };
 
+/* engrenagem desenhada à mão para não trazer estilo de biblioteca de ícone */
+function IconeEngrenagem() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1" />
+    </svg>
+  );
+}
+
 export default function DiagnosticoPage() {
   const [linhas, setLinhas] = useState<Linha[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [passo, setPasso] = useState(0);
   const [respostas, setRespostas] = useState<Record<number, Letra>>({});
   const [concluido, setConcluido] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
+  const [vendoRespostas, setVendoRespostas] = useState(false);
 
   useEffect(() => {
     fetch("/dados/diagnostico.csv")
@@ -266,31 +278,133 @@ export default function DiagnosticoPage() {
     setConcluido(false);
   }
 
-  if (erro)
+  /* moldura comum: caixa branca + engrenagem persistente abaixo dela */
+  function Moldura({ children }: { children: React.ReactNode }) {
     return (
       <div style={sTela}>
-        <div style={sCaixa}>
-          <p style={{ font: `400 ${tCorpo}/1.55 ${fonte}` }}>
-            Não foi possível carregar o diagnóstico ({erro}).
-          </p>
+        <div style={{ width: "100%", maxWidth: 720 }}>
+          <div style={sCaixa}>{children}</div>
+
+          <div style={{ position: "relative", marginTop: 10 }}>
+            <button
+              type="button"
+              aria-label="Configurações"
+              onClick={() => setMenuAberto(!menuAberto)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 32,
+                height: 32,
+                background: "#fff",
+                color: preto,
+                border: `1px solid ${preto}`,
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              <IconeEngrenagem />
+            </button>
+
+            {menuAberto && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: 36,
+                  background: "#fff",
+                  border: `1px solid ${preto}`,
+                  minWidth: 180,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVendoRespostas(!vendoRespostas);
+                    setMenuAberto(false);
+                  }}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "left",
+                    background: "#fff",
+                    color: preto,
+                    border: "none",
+                    padding: "10px 14px",
+                    font: `400 ${tRotulo}/1.3 ${fonte}`,
+                    cursor: "pointer",
+                  }}
+                >
+                  {vendoRespostas ? "Voltar ao diagnóstico" : "Ver respostas"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+    );
+  }
+
+  if (erro)
+    return (
+      <Moldura>
+        <p style={{ font: `400 ${tCorpo}/1.55 ${fonte}` }}>
+          Não foi possível carregar o diagnóstico ({erro}).
+        </p>
+      </Moldura>
     );
 
   if (!linhas)
     return (
-      <div style={sTela}>
-        <div style={sCaixa}>
-          <p style={{ font: `400 ${tCorpo}/1.55 ${fonte}` }}>Carregando…</p>
-        </div>
-      </div>
+      <Moldura>
+        <p style={{ font: `400 ${tCorpo}/1.55 ${fonte}` }}>Carregando…</p>
+      </Moldura>
+    );
+
+  /* --- conferência: as 36 respostas, separadas pelos 4 níveis --- */
+  if (vendoRespostas)
+    return (
+      <Moldura>
+        <p style={{ font: `400 ${tRotulo}/1 ${fonte}`, margin: "0 0 20px", letterSpacing: ".08em" }}>
+          TODAS AS RESPOSTAS · {linhas.length} CRUZAMENTOS
+        </p>
+
+        {focos.map((f) => {
+          const doFoco = linhas.filter((l) => l.foco === f.foco);
+          return (
+            <div key={f.foco} style={{ marginBottom: 32 }}>
+              <p
+                style={{
+                  font: `700 ${tSubtitulo}/1.3 ${fonte}`,
+                  margin: "0 0 4px",
+                  paddingBottom: 8,
+                  borderBottom: `1px solid ${preto}`,
+                }}
+              >
+                Nível {f.foco} · {f.nivel}
+              </p>
+              <p style={{ font: `400 ${tRotulo}/1.5 ${fonte}`, margin: "8px 0 18px" }}>
+                Pergunta {doFoco[0].num1} × Pergunta {doFoco[0].num2}
+              </p>
+
+              {doFoco.map((l) => (
+                <div key={l.resposta1 + l.resposta2} style={{ marginBottom: 16 }}>
+                  <p style={{ font: `700 ${tRotulo}/1.3 ${fonte}`, margin: "0 0 4px" }}>
+                    {l.resposta1} + {l.resposta2}
+                  </p>
+                  <p style={{ font: `400 ${tCorpo}/1.55 ${fonte}`, margin: 0 }}>{l.diagnostico}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </Moldura>
     );
 
   /* --- resultado --- */
   if (concluido)
     return (
-      <div style={sTela}>
-        <div style={sCaixa}>
+      <Moldura>
           <p style={{ font: `400 ${tRotulo}/1 ${fonte}`, margin: "0 0 20px", letterSpacing: ".08em" }}>
             DIAGNÓSTICO
           </p>
@@ -311,11 +425,10 @@ export default function DiagnosticoPage() {
             </p>
           ))}
 
-          <button type="button" style={sBotaoTexto} onClick={reiniciar}>
-            Refazer
-          </button>
-        </div>
-      </div>
+        <button type="button" style={sBotaoTexto} onClick={reiniciar}>
+          Refazer
+        </button>
+      </Moldura>
     );
 
   /* --- uma pergunta por vez --- */
@@ -323,8 +436,7 @@ export default function DiagnosticoPage() {
   if (!p) return null;
 
   return (
-    <div style={sTela}>
-      <div style={sCaixa}>
+    <Moldura>
         <p style={{ font: `400 ${tRotulo}/1 ${fonte}`, margin: "0 0 24px", letterSpacing: ".08em" }}>
           {passo + 1} / {perguntas.length}
         </p>
@@ -353,14 +465,13 @@ export default function DiagnosticoPage() {
           ))}
         </div>
 
-        {passo > 0 && (
-          <div style={{ marginTop: 18 }}>
-            <button type="button" style={sBotaoTexto} onClick={() => setPasso(passo - 1)}>
-              Voltar
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+      {passo > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <button type="button" style={sBotaoTexto} onClick={() => setPasso(passo - 1)}>
+            Voltar
+          </button>
+        </div>
+      )}
+    </Moldura>
   );
 }
