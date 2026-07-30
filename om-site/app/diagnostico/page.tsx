@@ -42,10 +42,9 @@ const LETRAS: Letra[] = ["A", "B", "C"];
 /* Texto de abertura do resultado. Sem citar nomes de etapas nem
    quantidades — a leitura abaixo dele já entrega isso. */
 const METODOLOGIA =
-  "A leitura a seguir cruza suas respostas com base em um modelo consolidado de " +
-  "construção de marca, em que cada etapa só se sustenta quando a anterior já está " +
-  "firme. É por isso que o resultado aponta o que já está construído antes de indicar " +
-  "o que vem depois: presença digital não se conquista de uma vez, se acumula.";
+  "O diagnóstico é construído sobre o modelo Customer-Based Brand Equity (CBBE) de " +
+  "Kevin Lane Keller, professor da Tuck School of Business (Dartmouth) e co-autor do " +
+  "Marketing Management com Philip Kotler.";
 
 /* --- parser de CSV: separador ";" e campos entre aspas --- */
 function parseCsv(texto: string): string[][] {
