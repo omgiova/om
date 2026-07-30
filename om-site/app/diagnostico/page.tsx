@@ -129,6 +129,46 @@ function montarLinhas(csv: string): Linha[] {
   }));
 }
 
+/* --- destaque ---
+   No CSV, o trecho entre ** ** vira grifo. Linha sem ** funciona igual.
+   Ex.: "... — **a base já está construída**, e a maior parte ..."          */
+function comDestaque(texto: string) {
+  return texto.split("**").map((parte, i) =>
+    i % 2 === 1 ? (
+      <mark
+        key={i}
+        style={{
+          background: "#e8e8e8",
+          color: "inherit",
+          fontWeight: 700,
+          padding: "0 2px",
+        }}
+      >
+        {parte}
+      </mark>
+    ) : (
+      parte
+    )
+  );
+}
+
+/* Separa a primeira frase (usada como título da seção) do resto.
+   Se o grifo atravessar o corte, fecha e reabre o ** para não desemparelhar. */
+function dividirPrimeiraFrase(texto: string): [string, string] {
+  const corte = texto.indexOf(". ");
+  if (corte === -1) return [texto, ""];
+
+  let primeira = texto.slice(0, corte + 1);
+  let resto = texto.slice(corte + 2);
+
+  if ((primeira.match(/\*\*/g) || []).length % 2 === 1) {
+    primeira += "**";
+    resto = "**" + resto;
+  }
+
+  return [primeira, resto];
+}
+
 /* --- estilos --- */
 const preto = "#000";
 const fonte = "Arial, Helvetica, sans-serif";
@@ -136,6 +176,7 @@ const fonte = "Arial, Helvetica, sans-serif";
 /* tamanhos que escalam com a largura da tela — legíveis no celular
    sem ficarem grandes demais no desktop */
 const tEnunciado = "clamp(21px, 5.4vw, 25px)";
+const tTitulo = "clamp(18px, 4.7vw, 21px)";
 const tSubtitulo = "clamp(15px, 4vw, 16px)";
 const tOpcao = "clamp(16px, 4.2vw, 17px)";
 const tCorpo = "clamp(16px, 4.2vw, 17px)";
@@ -386,14 +427,24 @@ export default function DiagnosticoPage() {
                 Pergunta {doFoco[0].num1} × Pergunta {doFoco[0].num2}
               </p>
 
-              {doFoco.map((l) => (
-                <div key={l.resposta1 + l.resposta2} style={{ marginBottom: 16 }}>
-                  <p style={{ font: `700 ${tRotulo}/1.3 ${fonte}`, margin: "0 0 4px" }}>
-                    {l.resposta1} + {l.resposta2}
-                  </p>
-                  <p style={{ font: `400 ${tCorpo}/1.55 ${fonte}`, margin: 0 }}>{l.diagnostico}</p>
-                </div>
-              ))}
+              {doFoco.map((l) => {
+                const [titulo, corpo] = dividirPrimeiraFrase(l.diagnostico);
+                return (
+                  <div key={l.resposta1 + l.resposta2} style={{ marginBottom: 20 }}>
+                    <p style={{ font: `700 ${tRotulo}/1.3 ${fonte}`, margin: "0 0 6px" }}>
+                      {l.resposta1} + {l.resposta2}
+                    </p>
+                    <p style={{ font: `700 ${tTitulo}/1.35 ${fonte}`, margin: "0 0 6px" }}>
+                      {comDestaque(titulo)}
+                    </p>
+                    {corpo && (
+                      <p style={{ font: `400 ${tCorpo}/1.55 ${fonte}`, margin: 0 }}>
+                        {comDestaque(corpo)}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           );
         })}
@@ -412,17 +463,24 @@ export default function DiagnosticoPage() {
             {METODOLOGIA}
           </p>
 
-          {resultado.map((r, i) => (
-            <p
-              key={r.foco}
-              style={{
-                font: `400 ${tCorpo}/1.6 ${fonte}`,
-                margin: i < resultado.length - 1 ? "0 0 22px" : "0 0 28px",
-              }}
-            >
-              {r.texto}
-            </p>
-          ))}
+          {resultado.map((r, i) => {
+            const [titulo, corpo] = dividirPrimeiraFrase(r.texto);
+            return (
+              <div
+                key={r.foco}
+                style={{ marginBottom: i < resultado.length - 1 ? 26 : 30 }}
+              >
+                <p style={{ font: `700 ${tTitulo}/1.35 ${fonte}`, margin: "0 0 8px" }}>
+                  {comDestaque(titulo)}
+                </p>
+                {corpo && (
+                  <p style={{ font: `400 ${tCorpo}/1.6 ${fonte}`, margin: 0 }}>
+                    {comDestaque(corpo)}
+                  </p>
+                )}
+              </div>
+            );
+          })}
 
         <button type="button" style={sBotaoTexto} onClick={reiniciar}>
           Refazer
